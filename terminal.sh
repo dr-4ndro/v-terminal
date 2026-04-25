@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================
-#  v_terminal Setup (Robust)
-#  Font, Banner, Anon, Dragon Prompt
+#  v_terminal Setup (Stable)
+#  Font, Banner, OPSEC packages, Dragon Prompt
 # ============================================
 
 BOLD="\e[1m"; RESET="\e[0m"; GREEN="\e[32m"; RED="\e[31m"; CYAN="\e[36m"; WHITE="\e[37m"
@@ -60,11 +60,29 @@ else
     echo -e "  ${BOLD}${GREEN}[i]${RESET} Banner exists. Skipping."
 fi
 
+# --- OPSEC Pre‑installation (root-repo, iproute2, etc.) ---
+echo -e "${BOLD}${GREEN}[+]${RESET} Checking OPSEC packages..."
+REQUIRED_PKGS="tor proxychains-ng privoxy macchanger curl dnsutils jq iproute2 iptables"
+MISSING_PKGS=""
+for pkg in $REQUIRED_PKGS; do
+    if ! command -v "$pkg" &>/dev/null; then
+        MISSING_PKGS="$MISSING_PKGS $pkg"
+    fi
+done
+if [ -n "$MISSING_PKGS" ]; then
+    echo -e "  ${BOLD}${YELLOW}[!]${RESET} Missing packages:${MISSING_PKGS}"
+    echo -e "  ${BOLD}${GREEN}[+]${RESET} Installing now..."
+    pkg install -y root-repo $MISSING_PKGS
+    echo -e "  ${BOLD}${GREEN}[√]${RESET} OPSEC packages installed."
+else
+    echo -e "  ${BOLD}${GREEN}[i]${RESET} All OPSEC packages already installed."
+fi
+
 # --- Anon Script ---
 ANON_FILE="$HOME/anon.sh"
 ANON_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/anon.sh"
 
-echo -e "${BOLD}${GREEN}[+]${RESET} Checking OPSEC script..."
+echo -e "${BOLD}${GREEN}[+]${RESET} Checking anon script..."
 if [ ! -f "$ANON_FILE" ]; then
     echo -e "  ${BOLD}${GREEN}[+]${RESET} Downloading anon.sh..."
     curl -sL -o "$ANON_FILE" "$ANON_URL"
@@ -72,16 +90,14 @@ if [ ! -f "$ANON_FILE" ]; then
         chmod +x "$ANON_FILE"
         echo -e "  ${BOLD}${GREEN}[√]${RESET} anon.sh downloaded."
     else
-        echo -e "  ${BOLD}${YELLOW}[!]${RESET} anon.sh download failed. OPSEC will be unavailable."
+        echo -e "  ${BOLD}${YELLOW}[!]${RESET} anon.sh download failed."
     fi
 else
     echo -e "  ${BOLD}${GREEN}[i]${RESET} anon.sh exists. Skipping."
 fi
 
-# --- .bashrc Configuration ---
+# --- Write .bashrc (heredoc ends on line with ZERO spaces) ---
 echo -e "${BOLD}${GREEN}[+]${RESET} Configuring Dragon Terminal..."
-
-# WARNING: We use 'EOF' (quoted) to prevent shell expansion inside the heredoc
 cat > ~/.bashrc << 'EOF'
 # ============================================
 #  Dragon Terminal (Venv + Anon)
@@ -100,7 +116,7 @@ if [ -f ~/anon.sh ]; then
     }
 fi
 
-# Prompt
+# Venv-aware Prompt
 set_prompt() {
     local venv=""
     if [ -n "$VIRTUAL_ENV" ]; then
@@ -117,7 +133,6 @@ set_prompt() {
     local BOLD_BLUE="\[\e[1;34m\]"
     local BOLD_GREEN="\[\e[1;32m\]"
 
-    # __USERNAME__ will be replaced by setup script
     CUSTOM_USER="__USERNAME__"
 
     PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}${CUSTOM_USER}${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
@@ -126,10 +141,10 @@ set_prompt() {
 
 PROMPT_COMMAND=set_prompt
 EOF
+# NOTE: The EOF above MUST be at the very beginning of the line (no spaces/tabs).
 
-# Inject the chosen username
+# Replace username placeholder
 sed -i "s/__USERNAME__/${CUSTOM_USER_INPUT}/" ~/.bashrc
-
 echo -e "  ${BOLD}${GREEN}[√]${RESET} Dragon Prompt ready."
 
 # --- Reload ---
@@ -141,154 +156,7 @@ echo ""
 echo -e "${BOLD}${GREEN}[√]${RESET} Setup complete"
 echo -e "  • Restart Termux to see the full effect."
 echo -e "  • To start anonymous mode: ${BOLD}${RED}anon start${RESET}"
-echo -e "${BOLD}${CYAN}==============================${RESET}"    echo -e "${BOLD}${GREEN}[i]${RESET} Font already installed. Skipping."
-else
-    echo -e "${BOLD}${GREEN}[+]${RESET} Downloading font..."
-    mkdir -p "$HOME/.termux"
-    curl -sL -o "$FONT_FILE" "$FONT_URL"
-    if [ -f "$FONT_FILE" ] && [ -s "$FONT_FILE" ]; then
-        echo -e "${BOLD}${GREEN}[√]${RESET} Font installed"
-    else
-        echo -e "${BOLD}${RED}[-]${RESET} Font download failed."
-        exit 1
-    fi
-fi
-
-# ------------------------------------------------------------
-#  Download Banner
-# ------------------------------------------------------------
-BANNER_FILE="$HOME/banner.txt"
-BANNER_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/banner.txt"
-
-if [ ! -f "$BANNER_FILE" ]; then
-    echo -e "${BOLD}${GREEN}[+]${RESET} Downloading banner..."
-    curl -sL -o "$BANNER_FILE" "$BANNER_URL"
-    if [ -f "$BANNER_FILE" ] && [ -s "$BANNER_FILE" ]; then
-        echo -e "${BOLD}${GREEN}[√]${RESET} Banner downloaded"
-    else
-        echo -e "${BOLD}${YELLOW}[!]${RESET} Banner download failed."
-    fi
-else
-    echo -e "${BOLD}${GREEN}[i]${RESET} Banner already exists. Skipping."
-fi
-
-# ------------------------------------------------------------
-#  Download OPSEC Script (anon.sh)
-# ------------------------------------------------------------
-ANON_FILE="$HOME/anon.sh"
-ANON_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/anon.sh"
-
-if [ ! -f "$ANON_FILE" ]; then
-    echo -e "${BOLD}${GREEN}[+]${RESET} Downloading anon script..."
-    curl -sL -o "$ANON_FILE" "$ANON_URL"
-    if [ -f "$ANON_FILE" ] && [ -s "$ANON_FILE" ]; then
-        chmod +x "$ANON_FILE"
-        echo -e "${BOLD}${GREEN}[√]${RESET} anon script downloaded"
-    else
-        echo -e "${BOLD}${YELLOW}[!]${RESET} anon script download failed."
-    fi
-else
-    echo -e "${BOLD}${GREEN}[i]${RESET} anon script already exists. Skipping."
-fi
-
-# ------------------------------------------------------------
-#  Write .bashrc
-# ------------------------------------------------------------
-echo -e "${BOLD}${GREEN}[+]${RESET} Configuring terminal prompt and tools..."
-
-cat > ~/.bashrc << 'EOF'
-# ============================================
-#  Dragon Terminal Prompt (Venv-aware)
-#  Banner + OPSEC (anon function)
-# ============================================
-
-# Clear screen and show banner
-clear
-if [ -f ~/banner.txt ]; then
-    cat ~/banner.txt
-fi
-
-# Anonymity function (if anon.sh exists)
-if [ -f ~/anon.sh ]; then
-    anon() {
-        bash ~/anon.sh "$@"
-    }
-fi
-
-# Venv-aware prompt
-set_prompt() {
-    local venv=""
-    if [ -n "$VIRTUAL_ENV" ]; then
-        venv="\[\e[35m\]($(basename "$VIRTUAL_ENV"))\[\e[0m\] "
-    fi
-
-    local RESET="\[\e[0m\]"; local BOLD="\[\e[1m\]"
-    local GREEN="\[\e[32m\]"; local RED="\[\e[31m\]"
-    local WHITE="\[\e[37m\]"; local CYAN="\[\e[36m\]"
-    local BOLD_BLUE="\[\e[1;34m\]"; local BOLD_GREEN="\[\e[1;32m\]"
-
-    CUSTOM_USER="__USERNAME__"
-
-    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}${CUSTOM_USER}${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
-    PS1+="${BOLD}${GREEN}╰───${RESET}${BOLD}${RED}▶${RESET}${BOLD_GREEN} "
-}
-PROMPT_COMMAND=set_prompt
-EOF
-
-# Replace username placeholder
-sed -i "s/__USERNAME__/${CUSTOM_USER_INPUT}/" ~/.bashrc
-
-echo -e "${BOLD}${GREEN}[√]${RESET} Prompt configured"
-
-# ------------------------------------------------------------
-#  Reload terminal
-# ------------------------------------------------------------
-echo -e "${BOLD}${GREEN}[/]${RESET} Reloading terminal..."
-termux-reload-settings
-source ~/.bashrc 2>/dev/null
-
-echo -e "${BOLD}${GREEN}[√]${RESET} Setup complete"
-echo -e "  • Restart Termux to see full effect."
-echo -e "  • To start anonymous mode: ${BOLD}${RED}anon start${RESET}"
-echo -e "${BOLD}${CYAN}==============================${RESET}"       venv="\[\e[35m\]($(basename "$VIRTUAL_ENV"))\[\e[0m\] "
-    fi
-
-    # Color definitions
-    local RESET="\[\e[0m\]"
-    local BOLD="\[\e[1m\]"
-    local GREEN="\[\e[32m\]"
-    local RED="\[\e[31m\]"
-    local WHITE="\[\e[37m\]"
-    local CYAN="\[\e[36m\]"
-    local BOLD_BLUE="\[\e[1;34m\]"
-    local BOLD_GREEN="\[\e[1;32m\]"
-
-    # Use CUSTOM_USER variable
-    CUSTOM_USER="__USERNAME__"
-
-    # Build first line: ╭── [venv] user@host directory [time]
-    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}${CUSTOM_USER}${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
-    # Build second line: ╰───▶
-    PS1+="${BOLD}${GREEN}╰───${RESET}${BOLD}${RED}▶${RESET}${BOLD_GREEN} "
-}
-
-# Tell bash to run this function before every prompt
-PROMPT_COMMAND=set_prompt
-EOF
-
-# Replace placeholder with actual username
-sed -i "s/__USERNAME__/${CUSTOM_USER_INPUT}/" ~/.bashrc
-
-echo -e "${BOLD}${GREEN}[√]${RESET} Prompt configured"
-
-# ------------------------------------------------------------
-#  Reload terminal
-# ------------------------------------------------------------
-echo -e "${BOLD}${GREEN}[/]${RESET} Reloading terminal..."
-termux-reload-settings
-source ~/.bashrc 2>/dev/null
-
-echo -e "${BOLD}${GREEN}[√]${RESET} Setup complete"
+echo -e "${BOLD}${CYAN}==============================${RESET}"${GREEN}[√]${RESET} Setup complete"
 echo -e "  ${BOLD}${GREEN}•${RESET} Restart Termux to see full effect."
 echo -e "  ${BOLD}${GREEN}•${RESET} To start anonymous mode: ${BOLD}${RED}anon start${RESET}"
 echo -e "${BOLD}${CYAN}==============================${RESET}"    mkdir -p "$HOME/.termux"
