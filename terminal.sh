@@ -100,6 +100,72 @@ source ~/.bashrc 2>/dev/null
 
 echo "[√] Setup complete"
 echo "  • Restart Termux to see full effect."
+echo "=============================="    curl -sL -o "$FONT_FILE" "$FONT_URL"
+
+    if [ $? -eq 0 ] && [ -s "$FONT_FILE" ]; then
+        echo "[√] Font installed"
+    else
+        echo "[-] Font download failed. Check network."
+        exit 1
+    fi
+fi
+
+# ------------------------------------------------------------
+#  Configure terminal prompt with Venv support
+# ------------------------------------------------------------
+echo "[+] Configuring terminal prompt..."
+
+cat > ~/.bashrc << 'EOF'
+# ============================================
+#  Dragon Terminal Prompt (Venv-aware)
+# ============================================
+
+# Function to set prompt dynamically
+set_prompt() {
+    # Detect Python virtual environment
+    local venv=""
+    if [ -n "$VIRTUAL_ENV" ]; then
+        # Show venv name in magenta with parentheses
+        venv="\[\e[35m\]($(basename "$VIRTUAL_ENV"))\[\e[0m\] "
+    fi
+
+    # Color definitions
+    local RESET="\[\e[0m\]"
+    local BOLD="\[\e[1m\]"
+    local GREEN="\[\e[32m\]"
+    local RED="\[\e[31m\]"
+    local WHITE="\[\e[37m\]"
+    local CYAN="\[\e[36m\]"
+    local BOLD_BLUE="\[\e[1;34m\]"
+    local BOLD_GREEN="\[\e[1;32m\]"
+
+    # Build first line: ╭── [venv] user@host directory [time]
+    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}"'${CUSTOM_USER}'"${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
+    # Build second line: ╰───▶
+    PS1+="${BOLD}${GREEN}╰───${RESET}${BOLD}${RED}▶${RESET}${BOLD_GREEN} "
+}
+
+# Use CUSTOM_USER variable (set from script)
+CUSTOM_USER="__USERNAME__"
+
+# Tell bash to run this function before every prompt
+PROMPT_COMMAND=set_prompt
+EOF
+
+# Replace placeholder with actual username
+sed -i "s/__USERNAME__/${CUSTOM_USER_INPUT}/" ~/.bashrc
+
+echo "[√] Prompt configured"
+
+# ------------------------------------------------------------
+#  Reload terminal
+# ------------------------------------------------------------
+echo "[/] Reloading terminal..."
+termux-reload-settings
+source ~/.bashrc 2>/dev/null
+
+echo "[√] Setup complete"
+echo "  • Restart Termux to see full effect."
 echo "=============================="    mkdir -p "$HOME/.termux"
     curl -sL -o "$FONT_FILE" "$FONT_URL"
 
