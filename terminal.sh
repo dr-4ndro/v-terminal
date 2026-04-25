@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================
-#  v_terminal Setup (Rock Solid)
+#  v_terminal Setup (No Heredoc)
 #  Font, Banner, OPSEC, Dragon Prompt
 # ============================================
 
@@ -35,6 +35,132 @@ else
     echo -e "  ${BOLD}${GREEN}[+]${RESET} Downloading font..."
     mkdir -p "$HOME/.termux"
     curl -sL -o "$FONT_FILE" "$FONT_URL"
+    if [ -f "$FONT_FILE" ] && [ -s "$FONT_FILE" ]; then
+        echo -e "  ${BOLD}${GREEN}[√]${RESET} Font installed."
+    else
+        echo -e "  ${BOLD}${RED}[-]${RESET} Font download failed."
+        exit 1
+    fi
+fi
+
+# --- Banner ---
+BANNER_FILE="$HOME/banner.txt"
+BANNER_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/banner.txt"
+
+echo -e "${BOLD}${GREEN}[+]${RESET} Checking Banner..."
+if [ ! -f "$BANNER_FILE" ]; then
+    echo -e "  ${BOLD}${GREEN}[+]${RESET} Downloading banner..."
+    curl -sL -o "$BANNER_FILE" "$BANNER_URL"
+    if [ -f "$BANNER_FILE" ] && [ -s "$BANNER_FILE" ]; then
+        echo -e "  ${BOLD}${GREEN}[√]${RESET} Banner downloaded."
+    else
+        echo -e "  ${BOLD}${YELLOW}[!]${RESET} Banner download failed. Skipping."
+    fi
+else
+    echo -e "  ${BOLD}${GREEN}[i]${RESET} Banner exists. Skipping."
+fi
+
+# --- OPSEC Pre‑installation ---
+echo -e "${BOLD}${GREEN}[+]${RESET} Checking OPSEC packages..."
+REQUIRED_PKGS="tor proxychains-ng privoxy macchanger curl dnsutils jq iproute2 iptables"
+MISSING_PKGS=""
+for pkg in $REQUIRED_PKGS; do
+    if ! command -v "$pkg" &>/dev/null; then
+        MISSING_PKGS="$MISSING_PKGS $pkg"
+    fi
+done
+if [ -n "$MISSING_PKGS" ]; then
+    echo -e "  ${BOLD}${YELLOW}[!]${RESET} Missing packages:${MISSING_PKGS}"
+    echo -e "  ${BOLD}${GREEN}[+]${RESET} Installing now..."
+    pkg install -y root-repo $MISSING_PKGS
+    echo -e "  ${BOLD}${GREEN}[√]${RESET} OPSEC packages installed."
+else
+    echo -e "  ${BOLD}${GREEN}[i]${RESET} All OPSEC packages already installed."
+fi
+
+# --- Anon Script ---
+ANON_FILE="$HOME/anon.sh"
+ANON_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/anon.sh"
+
+echo -e "${BOLD}${GREEN}[+]${RESET} Checking anon script..."
+if [ ! -f "$ANON_FILE" ]; then
+    echo -e "  ${BOLD}${GREEN}[+]${RESET} Downloading anon.sh..."
+    curl -sL -o "$ANON_FILE" "$ANON_URL"
+    if [ -f "$ANON_FILE" ] && [ -s "$ANON_FILE" ]; then
+        chmod +x "$ANON_FILE"
+        echo -e "  ${BOLD}${GREEN}[√]${RESET} anon.sh downloaded."
+    else
+        echo -e "  ${BOLD}${YELLOW}[!]${RESET} anon.sh download failed."
+    fi
+else
+    echo -e "  ${BOLD}${GREEN}[i]${RESET} anon.sh exists. Skipping."
+fi
+
+# --- Write .bashrc without heredoc ---
+echo -e "${BOLD}${GREEN}[+]${RESET} Configuring Dragon Terminal..."
+
+> ~/.bashrc
+
+echo '# ============================================' >> ~/.bashrc
+echo '#  Dragon Terminal (Venv + Anon)             ' >> ~/.bashrc
+echo '# ============================================' >> ~/.bashrc
+echo '' >> ~/.bashrc
+
+# Clear screen and show banner
+echo 'clear' >> ~/.bashrc
+echo 'if [ -f ~/banner.txt ]; then' >> ~/.bashrc
+echo '    cat ~/banner.txt' >> ~/.bashrc
+echo 'fi' >> ~/.bashrc
+echo '' >> ~/.bashrc
+
+# Anonymity function
+echo 'if [ -f ~/anon.sh ]; then' >> ~/.bashrc
+echo '    anon() {' >> ~/.bashrc
+echo '        bash ~/anon.sh "$@"' >> ~/.bashrc
+echo '    }' >> ~/.bashrc
+echo 'fi' >> ~/.bashrc
+echo '' >> ~/.bashrc
+
+# Prompt function
+echo 'set_prompt() {' >> ~/.bashrc
+echo '    local venv=""' >> ~/.bashrc
+echo '    if [ -n "$VIRTUAL_ENV" ]; then' >> ~/.bashrc
+echo '        local venv_name=$(basename "$VIRTUAL_ENV")' >> ~/.bashrc
+echo '        venv="\[\e[35m\](${venv_name})\[\e[0m\] "' >> ~/.bashrc
+echo '    fi' >> ~/.bashrc
+echo '' >> ~/.bashrc
+echo '    local RESET="\[\e[0m\]"' >> ~/.bashrc
+echo '    local BOLD="\[\e[1m\]"' >> ~/.bashrc
+echo '    local GREEN="\[\e[32m\]"' >> ~/.bashrc
+echo '    local RED="\[\e[31m\]"' >> ~/.bashrc
+echo '    local WHITE="\[\e[37m\]"' >> ~/.bashrc
+echo '    local CYAN="\[\e[36m\]"' >> ~/.bashrc
+echo '    local BOLD_BLUE="\[\e[1;34m\]"' >> ~/.bashrc
+echo '    local BOLD_GREEN="\[\e[1;32m\]"' >> ~/.bashrc
+echo '' >> ~/.bashrc
+echo '    CUSTOM_USER="__USERNAME__"' >> ~/.bashrc
+echo '' >> ~/.bashrc
+echo '    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}${CUSTOM_USER}${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"' >> ~/.bashrc
+echo '    PS1+="${BOLD}${GREEN}╰───${RESET}${BOLD}${RED}▶${RESET}${BOLD_GREEN} "' >> ~/.bashrc
+echo '}' >> ~/.bashrc
+echo '' >> ~/.bashrc
+echo 'PROMPT_COMMAND=set_prompt' >> ~/.bashrc
+
+# Replace username placeholder
+sed -i "s/__USERNAME__/${CUSTOM_USER_INPUT}/" ~/.bashrc
+
+echo -e "  ${BOLD}${GREEN}[√]${RESET} Dragon Prompt ready."
+
+# --- Reload ---
+echo -e "${BOLD}${GREEN}[/]${RESET} Reloading terminal..."
+termux-reload-settings
+source ~/.bashrc 2>/dev/null
+
+echo ""
+echo -e "${BOLD}${GREEN}[√]${RESET} Setup complete"
+echo -e "  • Restart Termux to see the full effect."
+echo -e "  • To start anonymous mode: ${BOLD}${RED}anon start${RESET}"
+echo -e "${BOLD}${CYAN}==============================${RESET}"    curl -sL -o "$FONT_FILE" "$FONT_URL"
     if [ -f "$FONT_FILE" ] && [ -s "$FONT_FILE" ]; then
         echo -e "  ${BOLD}${GREEN}[√]${RESET} Font installed."
     else
