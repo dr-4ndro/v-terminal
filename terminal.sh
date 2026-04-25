@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# ==============================
-#  Terminal Setup Script
-#  Includes Venv-aware Prompt
-# ==============================
+# ============================================
+#  Terminal Setup Script (v_terminal)
+#  Font, Banner, Venv-aware Prompt
+# ============================================
 
 echo "=============================="
 echo "  Starting Terminal Setup..."
@@ -45,6 +45,24 @@ else
 fi
 
 # ------------------------------------------------------------
+#  Download Banner from GitHub
+# ------------------------------------------------------------
+BANNER_FILE="$HOME/banner.txt"
+BANNER_URL="https://raw.githubusercontent.com/dr-4ndro/v-terminal/main/banner.txt"
+
+if [ ! -f "$BANNER_FILE" ]; then
+    echo "[+] Downloading banner..."
+    curl -sL -o "$BANNER_FILE" "$BANNER_URL"
+    if [ $? -eq 0 ] && [ -s "$BANNER_FILE" ]; then
+        echo "[√] Banner downloaded"
+    else
+        echo "[!] Banner download failed, continuing without it"
+    fi
+else
+    echo "[i] Banner already exists. Skipping download."
+fi
+
+# ------------------------------------------------------------
 #  Configure terminal prompt with Venv support
 # ------------------------------------------------------------
 echo "[+] Configuring terminal prompt..."
@@ -54,12 +72,16 @@ cat > ~/.bashrc << 'EOF'
 #  Dragon Terminal Prompt (Venv-aware)
 # ============================================
 
+# Display banner at startup
+if [ -f ~/banner.txt ]; then
+    cat ~/banner.txt
+fi
+
 # Function to set prompt dynamically
 set_prompt() {
     # Detect Python virtual environment
     local venv=""
     if [ -n "$VIRTUAL_ENV" ]; then
-        # Show venv name in magenta with parentheses
         venv="\[\e[35m\]($(basename "$VIRTUAL_ENV"))\[\e[0m\] "
     fi
 
@@ -73,14 +95,14 @@ set_prompt() {
     local BOLD_BLUE="\[\e[1;34m\]"
     local BOLD_GREEN="\[\e[1;32m\]"
 
+    # Use CUSTOM_USER variable
+    CUSTOM_USER="__USERNAME__"
+
     # Build first line: ╭── [venv] user@host directory [time]
-    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}"'${CUSTOM_USER}'"${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
+    PS1="${BOLD}${GREEN}╭── ${RESET}${venv}${BOLD}${RED}${CUSTOM_USER}${RESET}${CYAN}@${RESET}${BOLD_GREEN}\h${RESET} ${BOLD_BLUE}\w${RESET} ${WHITE}[${RESET}${BOLD}${RED}\t${RESET}${WHITE}]${RESET}\n"
     # Build second line: ╰───▶
     PS1+="${BOLD}${GREEN}╰───${RESET}${BOLD}${RED}▶${RESET}${BOLD_GREEN} "
 }
-
-# Use CUSTOM_USER variable (set from script)
-CUSTOM_USER="__USERNAME__"
 
 # Tell bash to run this function before every prompt
 PROMPT_COMMAND=set_prompt
