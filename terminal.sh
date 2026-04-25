@@ -1,9 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================
 #  Terminal Setup Script (v_terminal)
-#  Font, Banner, Venv-aware Prompt
+#  Font, Banner, Venv-aware Prompt + Clear
 # ============================================
 
+clear
 echo "=============================="
 echo "  Starting Terminal Setup..."
 echo "=============================="
@@ -63,16 +64,20 @@ else
 fi
 
 # ------------------------------------------------------------
-#  Configure terminal prompt with Venv support
+#  Configure terminal prompt with Venv support + Clear
 # ------------------------------------------------------------
 echo "[+] Configuring terminal prompt..."
 
 cat > ~/.bashrc << 'EOF'
 # ============================================
 #  Dragon Terminal Prompt (Venv-aware)
+#  Banner + Clear Screen at startup
 # ============================================
 
-# Display banner at startup
+# Clear screen first
+clear
+
+# Display banner if present
 if [ -f ~/banner.txt ]; then
     cat ~/banner.txt
 fi
